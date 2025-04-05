@@ -17,17 +17,24 @@ class Game:
         self.boss_active = False
         self.wave = 1
         self.enemies_per_wave = 5  # Enemigos iniciales por oleada
+        self.time_since_last_wave = 0
+        self.wave_delay = 5000
+        self.round_count = 0
+        self.wave = 1
+        self.wave_completed = False
         self._spawn_wave()  # Generar primera oleada
 
     def _spawn_wave(self):
-        """Genera una nueva oleada de enemigos con más cantidad."""
-        num_enemies = self.enemies_per_wave
-        spacing = 800 / (num_enemies + 1)
-        for i in range(num_enemies):
-            x = spacing * (i + 1)
-            self.opponents.append(Opponent(x, 50))
-        self.enemies_per_wave += 2  # Incrementar enemigos para la próxima oleada
-        self.wave += 1
+        """Genera una nueva oleada de enemigos."""
+        if not self.opponents:  # Solo generar nueva oleada si no hay enemigos activos
+            num_enemies = self.enemies_per_wave
+            spacing = 800 / (num_enemies + 1)
+            for i in range(num_enemies):
+                x = spacing * (i + 1)
+                self.opponents.append(Opponent(x, 50))
+            
+            self.wave_completed = False  # Resetear la bandera al generar nueva oleada
+            self.wave += 1  # Incrementar el contador de oleadas
 
     def _spawn_boss_if_needed(self):
         """Verifica si se debe generar el jefe al finalizar una oleada."""
@@ -63,10 +70,21 @@ class Game:
     def _update(self):
         current_time = pygame.time.get_ticks()
         
-        # Gestionar la aparición de enemigos por rondas
-        if current_time - self.time_since_last_wave > self.wave_delay:
-            self._spawn_opponents()
-
+        # Verificar si la oleada actual está completada (no hay enemigos)
+        if not self.opponents and not self.wave_completed:
+            self.wave_completed = True
+            # Reducir el número de oleada si es mayor que 1
+            if self.wave > 1:
+                self.wave -= 1
+            
+            # Esperar un tiempo antes de generar nueva oleada
+            self.time_since_last_wave = current_time
+        
+        # Generar nueva oleada después del delay
+        if self.wave_completed and current_time - self.time_since_last_wave > self.wave_delay:
+            self._spawn_wave()
+        
+        # Resto de la lógica de actualización...
         self._update_opponents()
         self._update_shots()
         self._check_collisions()
