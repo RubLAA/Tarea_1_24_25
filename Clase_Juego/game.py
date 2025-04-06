@@ -19,7 +19,6 @@ class Game:
         self.enemies_per_wave = 5
         self.time_since_last_wave = 0
         self.wave_delay = 5000
-        self.wave = 5  # Oleadas iniciales antes del jefe
         self.formation_pattern = 0  # Patrón de formación actual
         self.screen_width = 800
         self.screen_height = 600
@@ -142,8 +141,11 @@ class Game:
         for event in pygame.event.get():
             if event.type == QUIT:
                 self._is_running = False
-            elif event.type == KEYDOWN and event.key == K_SPACE and self.player.is_alive:
-                self.shots.append(self.player.shoot())
+            elif event.type == KEYDOWN:
+                if event.key == K_SPACE and self.player.is_alive:
+                    shot = self.player.shoot()  # Ahora shoot() puede devolver None
+                    if shot:  # Solo añadir si se creó el disparo
+                        self.shots.append(shot)
         keys = pygame.key.get_pressed()
         if self.player.is_alive:
             if keys[K_LEFT]:
@@ -166,6 +168,7 @@ class Game:
         self._update_shots()
         self._check_collisions()
         self._handle_respawn(current_time)
+        self.player.update_cooldown()
     
     def _update_opponents(self):
         for opponent in self.opponents[:]:
@@ -261,8 +264,34 @@ class Game:
         self.screen.blit(font.render(f'Score: {self.score}', True, (255,255,255)), (10,10))
         self.screen.blit(font.render(f'Lives: {self.player.lives}', True, (255,255,255)), (10,50))
         self.screen.blit(font.render(f'Wave: {self.wave}', True, (255,255,255)), (10,90))
+        self._draw_cooldown_bar()
         pygame.display.flip()
     
+    def _draw_cooldown_bar(self):
+        # Configuraciones de la barra
+        bar_width = 10
+        bar_height = 30
+        border = 2
+        
+        # Posición relativa al jugador
+        player_right = self.player.rect.right
+        bar_x = player_right + 5  # 10px a la derecha del jugador
+        bar_y = self.player.rect.centery - bar_height//2
+        
+        # Barra de fondo
+        pygame.draw.rect(self.screen, (50, 50, 50), 
+                        (bar_x, bar_y, bar_width, bar_height))
+        
+        # Barra de progreso
+        fill_height = bar_height * self.player.cooldown_progress
+        color = (0, 255, 0) if self.player.cooldown_progress >= 1 else (255, 0, 0)
+        
+        pygame.draw.rect(self.screen, color,
+                        (bar_x + border, 
+                         bar_y + bar_height - fill_height + border,
+                         bar_width - border*2,
+                         fill_height - border*2))
+
     def _end_game(self, victory=False):
         self.screen.fill((0, 0, 0))
         font = pygame.font.Font(None, 74)

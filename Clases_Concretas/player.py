@@ -20,6 +20,9 @@ class Player(Character):
         self._color = (0, 0, 255)
         self.respawn_time = 0
         self._is_visible = True
+        self.last_shot = 0  # Tiempo del último disparo
+        self.shot_cooldown = 500  # Cooldown en milisegundos (0.5 segundos)
+        self.cooldown_progress = 1.0
 
     @property
     def is_visible(self): return self._is_visible
@@ -40,4 +43,15 @@ class Player(Character):
             self.rect.x += dx
             self.rect.x = max(0, min(self.rect.x, 750))
 
-    def shoot(self): return Shot(self.rect.centerx, self.rect.top, 'up', 'player')
+    def shoot(self):
+        current_time = pygame.time.get_ticks()
+        if current_time - self.last_shot > self.shot_cooldown:
+            self.last_shot = current_time
+            self.cooldown_progress = 0.0
+            return Shot(self.rect.centerx, self.rect.top, 'up', 'player')
+        return None
+    
+    def update_cooldown(self):
+        current_time = pygame.time.get_ticks()
+        elapsed = current_time - self.last_shot
+        self.cooldown_progress = min(elapsed / self.shot_cooldown, 1.0)
