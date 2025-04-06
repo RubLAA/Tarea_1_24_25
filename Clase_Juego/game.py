@@ -15,34 +15,24 @@ class Game:
         self.opponents = []
         self.shots = []
         self.boss_active = False
-        self.wave = 1
-        self.enemies_per_wave = 5  # Enemigos iniciales por oleada
+        self.wave = 5  # Oleadas iniciales antes del jefe
+        self.enemies_per_wave = 5
         self.time_since_last_wave = 0
         self.wave_delay = 5000
-        self.round_count = 0
-        self.wave = 1
-        self.wave_completed = False
-        self._spawn_wave()  # Generar primera oleada
+        self._spawn_wave()
 
     def _spawn_wave(self):
-        """Genera una nueva oleada de enemigos."""
-        if not self.opponents:  # Solo generar nueva oleada si no hay enemigos activos
-            num_enemies = self.enemies_per_wave
-            spacing = 800 / (num_enemies + 1)
-            for i in range(num_enemies):
-                x = spacing * (i + 1)
-                self.opponents.append(Opponent(x, 50))
-            
-            self.wave_completed = False  # Resetear la bandera al generar nueva oleada
-            self.wave += 1  # Incrementar el contador de oleadas
+        """Genera una nueva oleada de enemigos"""
+        num_enemies = self.enemies_per_wave
+        spacing = 800 / (num_enemies + 1)
+        for i in range(num_enemies):
+            x = spacing * (i + 1)
+            self.opponents.append(Opponent(x, 50))
+        self.enemies_per_wave += 2  # Aumentar dificultad progresiva
 
-    def _spawn_boss_if_needed(self):
-        """Verifica si se debe generar el jefe al finalizar una oleada."""
-        # Corregir condición para excluir Boss
-        if not self.boss_active and not any(
-            (isinstance(op, Opponent) and not isinstance(op, Boss)) 
-            for op in self.opponents
-        ):
+    def _spawn_boss(self):
+        """Genera el jefe final"""
+        if not self.boss_active:
             self.opponents.append(Boss(375, 50))
             self.boss_active = True
 
@@ -70,26 +60,18 @@ class Game:
     def _update(self):
         current_time = pygame.time.get_ticks()
         
-        # Verificar si la oleada actual está completada (no hay enemigos)
-        if not self.opponents and not self.wave_completed:
-            self.wave_completed = True
-            # Reducir el número de oleada si es mayor que 1
-            if self.wave > 1:
-                self.wave -= 1
-            
-            # Esperar un tiempo antes de generar nueva oleada
-            self.time_since_last_wave = current_time
-        
-        # Generar nueva oleada después del delay
-        if self.wave_completed and current_time - self.time_since_last_wave > self.wave_delay:
-            self._spawn_wave()
-        
-        # Resto de la lógica de actualización...
+        # Verificar si se completó una oleada
+        if not self.opponents and not self.boss_active:
+            if self.wave > 0:
+                self.wave -= 1  # Reducir contador de oleadas
+                self._spawn_wave()
+            else:
+                self._spawn_boss()
+
         self._update_opponents()
         self._update_shots()
         self._check_collisions()
         self._handle_respawn(current_time)
-        self._spawn_boss_if_needed()
     
     def _update_opponents(self):
         for opponent in self.opponents[:]:
@@ -130,8 +112,8 @@ class Game:
             if enemy.health <= 0:
                 self.opponents.remove(enemy)
                 self.score += 15
-                if not any(isinstance(e, Boss) for e in self.opponents):
-                    self._end_game(victory=True)
+                self.boss_active = False
+                self._end_game(victory=True)
         else:
             self.opponents.remove(enemy)
             self.score += 1
