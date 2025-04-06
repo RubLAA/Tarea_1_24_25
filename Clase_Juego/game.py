@@ -25,8 +25,10 @@ class Game:
         self.screen_height = 600
         self.enemy_width = 40  # Asumiendo que el ancho del enemigo es 40px
         self.margin = 20  # Margen lateral mínimo
-        self.vertical_spacing = 80  # Aumentar este valor para más separación
-        self.formation_start_y = 50  # Posición vertical inicial
+        self.vertical_spacing = 120  # Aumentar este valor para más separación
+        self.formation_start_y = 80  # Posición vertical inicial
+        self.spawn_height = -100  # Altura de spawn fuera de pantalla
+        self.formation_target_y = 100  # Posición objetivo final Y
         self._spawn_wave()
 
     def _spawn_wave(self):
@@ -44,13 +46,17 @@ class Game:
         self.enemies_per_wave += 2
 
     def _create_staggered_formation(self, num_enemies):
-        """Formación escalonada con más espacio vertical"""
+        """Formación escalonada que entra desde arriba"""
         rows = 2 + (self.wave // 3)
         max_per_row = (self.screen_width - 2 * self.margin) // (self.enemy_width + 10)
         enemies_per_row = min(num_enemies // rows, max_per_row)
         
         for row in range(rows):
-            y = self.formation_start_y + row * self.vertical_spacing
+            # Posición objetivo final
+            target_y = self.formation_target_y + row * self.vertical_spacing
+            # Posición inicial fuera de pantalla
+            start_y = self.spawn_height - (row * 50)
+            
             x_offset = 30 if row % 2 == 0 else 0
             available_width = self.screen_width - 2 * self.margin - x_offset
             spacing = available_width / (enemies_per_row + 1)
@@ -58,11 +64,13 @@ class Game:
             for i in range(enemies_per_row):
                 x = self.margin + x_offset + spacing * (i + 1)
                 x = min(max(x, self.margin), self.screen_width - self.margin - self.enemy_width)
-                self.opponents.append(Opponent(x, y))
+                enemy = Opponent(x, start_y)
+                enemy.target_y = target_y  # Nueva propiedad
+                self.opponents.append(enemy)
 
     def _create_diamond_formation(self, num_enemies):
-        """Diamante con más espacio entre capas"""
-        center_x, center_y = self.screen_width // 2, self.formation_start_y
+        """Diamante que entra desde arriba"""
+        center_x = self.screen_width // 2
         max_layers = 3
         enemies_added = 0
         horizontal_spacing = 60
@@ -76,17 +84,21 @@ class Game:
             for i in range(layer_enemies):
                 x = start_x + i * current_spacing
                 x = min(max(x, self.margin), self.screen_width - self.margin - self.enemy_width)
-                y = center_y + layer * self.vertical_spacing
+                # Posición vertical inicial escalonada
+                start_y = self.spawn_height - (layer * 30)
+                target_y = self.formation_target_y + (layer * self.vertical_spacing)
                 
-                if enemies_added < num_enemies and x <= self.screen_width - self.margin - self.enemy_width:
-                    self.opponents.append(Opponent(x, y))
+                if enemies_added < num_enemies:
+                    enemy = Opponent(x, start_y)
+                    enemy.target_y = target_y
+                    self.opponents.append(enemy)
                     enemies_added += 1
             
             if enemies_added >= num_enemies:
                 break
 
     def _create_double_row_formation(self, num_enemies):
-        """Dos filas con mayor separación vertical"""
+        """Dos filas que entran desde arriba"""
         row1_enemies = num_enemies // 2
         row2_enemies = num_enemies - row1_enemies
         max_per_row = (self.screen_width - 2 * self.margin) // (self.enemy_width + 20)
@@ -99,14 +111,18 @@ class Game:
             spacing = (self.screen_width - 2 * self.margin) / (row1_enemies + 1)
             for i in range(row1_enemies):
                 x = self.margin + spacing * (i + 1)
-                self.opponents.append(Opponent(x, self.formation_start_y))
+                enemy = Opponent(x, self.spawn_height)
+                enemy.target_y = self.formation_target_y
+                self.opponents.append(enemy)
         
-        # Segunda fila
+        # Segunda fila (entra después)
         if row2_enemies > 0:
             spacing = (self.screen_width - 2 * self.margin) / (row2_enemies + 1)
             for i in range(row2_enemies):
                 x = self.margin + spacing * (i + 1)
-                self.opponents.append(Opponent(x, self.formation_start_y + self.vertical_spacing))
+                enemy = Opponent(x, self.spawn_height - 50)  # Mayor altura inicial
+                enemy.target_y = self.formation_target_y + self.vertical_spacing
+                self.opponents.append(enemy)
 
     def _spawn_boss(self):
         """Genera el jefe final"""
@@ -154,15 +170,13 @@ class Game:
     def _update_opponents(self):
         for opponent in self.opponents[:]:
             opponent.move()
-            shot = opponent.shoot()
-            if shot:
-                if isinstance(shot, list):
-                    self.shots.extend(shot)
-                else:
-                    self.shots.append(shot)
-            if opponent.has_reached_bottom:
-                self._end_game(victory=False)
-                return
+            # Eliminar enemigos que salgan de la pantalla
+            if opponent.rect.y > 600:
+                self.opponents.remove(opponent)
+            else:
+                shot = opponent.shoot()
+                if shot:
+                    self.shots.extend(shot if isinstance(shot, list) else [shot])
     
     def _update_shots(self):
         for shot in self.shots[:]:

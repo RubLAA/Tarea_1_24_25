@@ -19,11 +19,35 @@ class Opponent(Character):
         self._shoot_delay = 2000
         self._last_shot = pygame.time.get_ticks()
         self._has_reached_bottom = False
+        self.rect = pygame.Rect(x, y, 40, 40)
+        self.speed = 1
+        self.target_y = y
+        self.entering = True
+        self.max_y = 400  # Límite máximo inferior para el movimiento
 
     def move(self):
-        self._rect.y += self._speed
-        self._rect.x += 2 * math.sin(pygame.time.get_ticks()/200)
-        if self._rect.bottom >= 600: self._has_reached_bottom = True
+        if self.entering:
+            # Movimiento controlado de entrada
+            if self.rect.y < self.target_y:
+                self.rect.y += self.speed * 2
+            else:
+                self.entering = False
+        else:
+            # Movimiento lateral con límite inferior
+            self.rect.x += self.speed
+            
+            # Limitar movimiento horizontal a la pantalla
+            if self.rect.right > 780 or self.rect.left < 20:
+                self.speed *= -1
+                # Descenso controlado sin sobrepasar el límite
+                if self.rect.y < self.max_y:
+                    self.rect.y += 20
+                else:
+                    # Si ya está en el límite, solo cambia dirección
+                    self.speed *= -1
+            
+            # Limitar posición vertical
+            self.rect.y = min(self.rect.y, self.max_y)
 
     @property
     def has_reached_bottom(self): return self._has_reached_bottom
