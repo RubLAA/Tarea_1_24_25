@@ -14,8 +14,9 @@ class Boss(Opponent):
     """
     def __init__(self, x, y):
         super().__init__(x, y)
-        self.rect = pygame.Rect(x, y, 80, 80)  # Tamaño mayor
-        self._color = (255, 165, 0)  # Color naranja
+        self.image = pygame.image.load('assets/sprites/boss.png').convert_alpha()
+        self.image = pygame.transform.scale(self.image, (80, 80))
+        self.rect = self.image.get_rect(topleft=(x, y)) # Color naranja
         self._max_health = 20
         self._health = self._max_health
         self._movement_direction = 1  # 1 derecha, -1 izquierda
@@ -99,9 +100,9 @@ class Boss(Opponent):
         ]
 
     def draw(self, screen):
-        # Dibujar cuerpo
-        pygame.draw.rect(screen, self._color, self.rect)
-        
+        # Dibujar sprite
+        screen.blit(self.image, self.rect)
+                
         # Dibujar barra de salud
         bar_width = self.rect.width
         bar_height = 7

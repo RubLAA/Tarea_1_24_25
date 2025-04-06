@@ -13,6 +13,9 @@ class Opponent(Character):
     """
     def __init__(self, x, y):
         super().__init__(x, y)
+        self.image = pygame.image.load('assets/sprites/enemy_basic.png').convert_alpha()
+        self.image = pygame.transform.scale(self.image, (60, 60))
+        self.rect = self.image.get_rect(topleft=(x, y))
         self._base_color = (255, 0, 0)
         self._color = self._base_color
         self._speed = 1.2
@@ -58,3 +61,6 @@ class Opponent(Character):
             self._last_shot = current_time
             return Shot(self.rect.centerx, self.rect.bottom, 'down', 'opponent')
         return None
+    
+    def draw(self, screen):
+        screen.blit(self.image, self.rect)

@@ -15,7 +15,7 @@ class Game:
         self.opponents = []
         self.shots = []
         self.boss_active = False
-        self.wave = 5  # Oleadas iniciales antes del jefe
+        self.wave = 0  # Oleadas iniciales antes del jefe
         self.enemies_per_wave = 5
         self.time_since_last_wave = 0
         self.wave_delay = 5000
