@@ -22,6 +22,7 @@ class Boss(Opponent):
         self._max_speed = 5
         self._shoot_delay = 1000  # 1 segundo entre disparos
         self._last_shot = 0
+        self._half_life_triggered = False  # Nuevo flag
 
     @property
     def health(self):
@@ -52,7 +53,7 @@ class Boss(Opponent):
             
             # Pequeño ajuste para evitar rebote infinito
             self.rect.x += self._movement_direction * 2
-            
+
         self.hitbox.center = self.rect.center
 
     def _change_attack_pattern(self):
@@ -62,6 +63,11 @@ class Boss(Opponent):
     def shoot(self):
         current_time = pygame.time.get_ticks()
         shots = []
+        
+        # Disparo especial único al 50% de vida
+        if not self._half_life_triggered and self._health <= self._max_health // 2:
+            self._half_life_triggered = True
+            return self._radial_attack()
         
         # Ataque especial cada 3 segundos
         if current_time - self._last_special_shot > self._special_shot_delay:
@@ -86,6 +92,21 @@ class Boss(Opponent):
                 self._current_speed = min(self._current_speed * 1.2, self._max_speed)
         
         return shots
+    
+    def _radial_attack(self):
+        import math
+        # Crea 24 disparos en todas direcciones
+        projectiles = []
+        for angle in range(0, 360, 15):
+            radian = math.radians(angle)
+            projectile = Shot(self.rect.centerx, self.rect.centery, 'down', 'boss', (255, 0, 0))
+            projectile._offset_angle(angle)  # Usamos el método existente de Shot
+            projectiles.append(projectile)
+        
+        # Efecto de sonido
+        pygame.mixer.Sound('assets/sounds/special_attack.wav').play()
+        
+        return projectiles
 
     def _special_attack(self):
         # Triple disparo angular
