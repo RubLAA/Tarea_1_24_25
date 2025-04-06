@@ -4,13 +4,6 @@ import math
 from Clases_Concretas.shot import Shot
 
 class Opponent(Character):
-    """
-    Enemigo básico
-    Características:
-    - Movimiento sinusoidal hacia abajo
-    - Disparos automáticos cada 2 segundos
-    - Al llegar al fondo termina el juego
-    """
     def __init__(self, x, y):
         super().__init__(x, y)
         self.image = pygame.image.load('assets/sprites/enemy_basic.png').convert_alpha()
@@ -27,6 +20,7 @@ class Opponent(Character):
         self.target_y = y
         self.entering = True
         self.max_y = 400  # Límite máximo inferior para el movimiento
+        self.hitbox = self.rect.inflate( -5, -5)  # Reduce 6px por lado
 
     def move(self):
         if self.entering:
@@ -51,6 +45,7 @@ class Opponent(Character):
             
             # Limitar posición vertical
             self.rect.y = min(self.rect.y, self.max_y)
+        self.hitbox.center = self.rect.center
 
     @property
     def has_reached_bottom(self): return self._has_reached_bottom

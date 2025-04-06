@@ -10,6 +10,7 @@ class Player(Character):
         self.base_image = pygame.transform.scale(self.base_image, (50, 50))
         self.image = self.base_image.copy()
         self.rect = self.image.get_rect(topleft=(x, y))
+        self.hitbox = self.rect.inflate(-20, -20)  # Reduce 10px por lado
         
         # Sistema de vidas y cooldown
         self.respawn_time = 0
@@ -40,6 +41,7 @@ class Player(Character):
         if self._is_alive:
             self.rect.x += dx
             self.rect.x = max(20, min(self.rect.x, 730))
+            self.hitbox.center = self.rect.center  # Mantener sincronizadas
 
     def shoot(self):
         current_time = pygame.time.get_ticks()

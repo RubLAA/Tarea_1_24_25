@@ -5,18 +5,12 @@ from Clases_Concretas.shot import Shot
 from Excepciones import InvalidEntityState
 
 class Boss(Opponent):
-    """
-    Jefe final mejorado con:
-    - Movimiento controlado sin velocidad infinita
-    - Colisiones precisas con bordes
-    - Sistema de ataque balanceado
-    - Barra de salud visible
-    """
     def __init__(self, x, y):
         super().__init__(x, y)
         self.image = pygame.image.load('assets/sprites/boss.png').convert_alpha()
         self.image = pygame.transform.scale(self.image, (80, 80))
-        self.rect = self.image.get_rect(topleft=(x, y)) # Color naranja
+        self.rect = self.image.get_rect(topleft=(x, y))
+        self.hitbox = self.rect.inflate(0, 0)
         self._max_health = 20
         self._health = self._max_health
         self._movement_direction = 1  # 1 derecha, -1 izquierda
@@ -58,6 +52,8 @@ class Boss(Opponent):
             
             # Pequeño ajuste para evitar rebote infinito
             self.rect.x += self._movement_direction * 2
+            
+        self.hitbox.center = self.rect.center
 
     def _change_attack_pattern(self):
         self._attack_pattern = random.choice([0, 1, 2])

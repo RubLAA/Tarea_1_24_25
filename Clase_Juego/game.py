@@ -188,18 +188,30 @@ class Game:
                 self.shots.remove(shot)
     
     def _check_collisions(self):
+        # Colisiones de disparos con el jugador
         for shot in self.shots[:]:
-            if shot._owner in ['opponent', 'boss'] and self.player.collide(shot):
-                self._handle_player_hit()
-                self.shots.remove(shot)
-                break
+            if shot._owner in ['opponent', 'boss']:
+                if self.player.hitbox.colliderect(shot.rect):
+                    self._handle_player_hit()
+                    self.shots.remove(shot)
+                    break
+        
+        # Colisiones de disparos del jugador con enemigos
         for shot in self.shots[:]:
             if shot._owner == 'player':
-                for opponent in self.opponents[:]:
-                    if opponent.collide(shot):
-                        self._handle_enemy_hit(opponent)
+                # Primero verificar colisión con el boss
+                for boss in [e for e in self.opponents if isinstance(e, Boss)]:
+                    if boss.hitbox.colliderect(shot.rect):
+                        self._handle_enemy_hit(boss)
                         self.shots.remove(shot)
                         break
+                # Luego con otros enemigos
+                else:
+                    for enemy in self.opponents[:]:
+                        if enemy.hitbox.colliderect(shot.rect):
+                            self._handle_enemy_hit(enemy)
+                            self.shots.remove(shot)
+                            break
     
     def _handle_enemy_hit(self, enemy):
         if isinstance(enemy, Boss):
