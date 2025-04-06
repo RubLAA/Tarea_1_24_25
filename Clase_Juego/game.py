@@ -19,16 +19,73 @@ class Game:
         self.enemies_per_wave = 5
         self.time_since_last_wave = 0
         self.wave_delay = 5000
+        self.wave = 5  # Oleadas iniciales antes del jefe
+        self.formation_pattern = 0  # Patrón de formación actual
         self._spawn_wave()
 
     def _spawn_wave(self):
-        """Genera una nueva oleada de enemigos"""
+        """Genera enemigos en diferentes formaciones por oleada"""
         num_enemies = self.enemies_per_wave
-        spacing = 800 / (num_enemies + 1)
-        for i in range(num_enemies):
-            x = spacing * (i + 1)
-            self.opponents.append(Opponent(x, 50))
-        self.enemies_per_wave += 2  # Aumentar dificultad progresiva
+        formation = self.wave % 3  # Rotar entre 3 formaciones
+        
+        if formation == 0:  # Formación escalonada
+            self._create_staggered_formation(num_enemies)
+        elif formation == 1:  # Formación diamante
+            self._create_diamond_formation(num_enemies)
+        else:  # Formación doble fila
+            self._create_double_row_formation(num_enemies)
+        
+        self.enemies_per_wave += 2
+
+    def _create_staggered_formation(self, num_enemies):
+        """Formación con filas desplazadas alternadamente"""
+        rows = 2 + (self.wave // 3)
+        vertical_spacing = 50
+        enemies_per_row = num_enemies // rows
+        
+        for row in range(rows):
+            y = 50 + row * vertical_spacing
+            x_offset = 40 if row % 2 == 0 else 0  # Desplazamiento alterno
+            spacing = (800 - x_offset) / (enemies_per_row + 1)
+            
+            for i in range(enemies_per_row + (1 if row < num_enemies % rows else 0)):
+                x = x_offset + spacing * (i + 1)
+                self.opponents.append(Opponent(x, y))
+
+    def _create_diamond_formation(self, num_enemies):
+        """Formación en diamante centrado"""
+        center_x, center_y = 400, 100
+        max_layers = 3
+        enemies_added = 0
+        
+        for layer in range(max_layers):
+            layer_enemies = 1 + 2 * layer
+            spacing = 600 // (layer + 1)
+            
+            for i in range(layer_enemies):
+                x = center_x + (i - layer) * spacing
+                y = center_y + layer * 50
+                if 0 < x < 800 and enemies_added < num_enemies:
+                    self.opponents.append(Opponent(x, y))
+                    enemies_added += 1
+            
+            if enemies_added >= num_enemies:
+                break
+
+    def _create_double_row_formation(self, num_enemies):
+        """Dos filas con diferentes espaciados"""
+        row1_enemies = num_enemies // 2
+        row2_enemies = num_enemies - row1_enemies
+        
+        # Primera fila
+        spacing = 800 / (row1_enemies + 1)
+        for i in range(row1_enemies):
+            self.opponents.append(Opponent(spacing * (i + 1), 50))
+        
+        # Segunda fila
+        spacing = 800 / (row2_enemies + 1)
+        for i in range(row2_enemies):
+            self.opponents.append(Opponent(spacing * (i + 1), 120))
 
     def _spawn_boss(self):
         """Genera el jefe final"""
