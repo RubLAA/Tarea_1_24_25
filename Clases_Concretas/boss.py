@@ -22,7 +22,10 @@ class Boss(Opponent):
         self._max_speed = 5
         self._shoot_delay = 1000  # 1 segundo entre disparos
         self._last_shot = 0
-        self._half_life_triggered = False  # Nuevo flag
+        self._phase_two = False
+        self._last_radial_attack = 0
+        self._radial_cooldown = 3000  # 3 segundos entre ataques
+
 
     @property
     def health(self):
@@ -64,10 +67,19 @@ class Boss(Opponent):
         current_time = pygame.time.get_ticks()
         shots = []
         
-        # Disparo especial único al 50% de vida
-        if not self._half_life_triggered and self._health <= self._max_health // 2:
-            self._half_life_triggered = True
-            return self._radial_attack()
+        # Entrar en fase 2 al 50% de vida
+        if not self._phase_two and self._health <= self._max_health // 2:
+            self._phase_two = True
+
+        # Ataque radial periódico en fase 2
+        if self._phase_two:
+            if current_time - self._last_radial_attack > self._radial_cooldown:
+                shots += self._radial_attack()
+                self._last_radial_attack = current_time
+        
+        # Ataques normales (se mantienen)
+        if current_time - self._last_shot > self._shoot_delay:
+            self._last_shot = current_time
         
         # Ataque especial cada 3 segundos
         if current_time - self._last_special_shot > self._special_shot_delay:
@@ -94,17 +106,13 @@ class Boss(Opponent):
         return shots
     
     def _radial_attack(self):
-        import math
-        # Crea 24 disparos en todas direcciones
         projectiles = []
-        for angle in range(0, 360, 15):
-            radian = math.radians(angle)
+        # 16 disparos en círculo con ángulos aleatorios
+        for _ in range(16):
+            angle = random.uniform(0, 360)
             projectile = Shot(self.rect.centerx, self.rect.centery, 'down', 'boss', (255, 0, 0))
-            projectile._offset_angle(angle)  # Usamos el método existente de Shot
+            projectile._offset_angle(angle)
             projectiles.append(projectile)
-        
-        # Efecto de sonido
-        pygame.mixer.Sound('assets/sounds/special_attack.wav').play()
         
         return projectiles
 
