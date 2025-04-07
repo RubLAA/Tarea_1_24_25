@@ -1,6 +1,5 @@
 from Clases_Base.character import Character
 import pygame
-import math
 from Clases_Concretas.shot import Shot
 
 class Opponent(Character):
